@@ -1,4 +1,4 @@
-// Copyright 2014 The Crashpad Authors. All rights reserved.
+// Copyright 2014 The Crashpad Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,7 +130,6 @@ MinidumpContextX86Writer::MinidumpContextX86Writer()
 
 MinidumpContextX86Writer::~MinidumpContextX86Writer() {
 }
-
 
 void MinidumpContextX86Writer::InitializeFromSnapshot(
     const CPUContextX86* context_snapshot) {
@@ -288,8 +287,8 @@ bool MinidumpContextAMD64Writer::WriteObject(FileWriterInterface* file_writer) {
   memcpy(buf, &context_, sizeof(context_));
 
   if (xsave_entries_.size() > 0) {
-    MinidumpContextExHeader context_ex = {{0}, {0}, {0}};
-    MinidumpXSaveAreaHeader xsave_header = {0};
+    MinidumpContextExHeader context_ex = {{0, 0}, {0, 0}, {0, 0}};
+    MinidumpXSaveAreaHeader xsave_header = {0, 0, {}};
 
     // CONTEXT_EX goes directly after the CONTEXT. |offset| is relative to
     // &CONTEXT_EX.

@@ -1,4 +1,4 @@
-// Copyright 2021 The Crashpad Authors. All rights reserved.
+// Copyright 2021 The Crashpad Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 #include <mach-o/loader.h>
 
-#include "base/cxx17_backports.h"
+#include <algorithm>
+
 #include "base/files/scoped_file.h"
 #include "base/posix/eintr_wrapper.h"
 #include "build/build_config.h"
@@ -63,7 +64,7 @@ class ProcessSnapshotIOSIntermediateDumpTest : public testing::Test {
   }
 
   void TearDown() override {
-    EXPECT_TRUE(writer_->Close());
+    CloseWriter();
     writer_.reset();
     EXPECT_FALSE(IsRegularFile(path_));
   }
@@ -392,6 +393,7 @@ class ProcessSnapshotIOSIntermediateDumpTest : public testing::Test {
               Key::kThreadContextMemoryRegionData, "string", 6));
         }
       }
+      EXPECT_TRUE(writer->AddPropertyBytes(Key::kThreadName, "ariadne", 7));
     }
   }
 
@@ -411,6 +413,7 @@ class ProcessSnapshotIOSIntermediateDumpTest : public testing::Test {
     uint64_t thread_id = 1;
     for (auto thread : threads) {
       EXPECT_EQ(thread->ThreadID(), thread_id);
+      EXPECT_EQ(thread->ThreadName(), "ariadne");
       EXPECT_EQ(thread->SuspendCount(), 666);
       EXPECT_EQ(thread->Priority(), 5);
       EXPECT_EQ(thread->ThreadSpecificDataAddress(), thread_id++);
@@ -490,6 +493,8 @@ class ProcessSnapshotIOSIntermediateDumpTest : public testing::Test {
     ExpectMachException(*snapshot.Exception());
   }
 
+  void CloseWriter() { EXPECT_TRUE(writer_->Close()); }
+
  private:
   std::unique_ptr<internal::IOSIntermediateDumpWriter> writer_;
   ScopedTempDir temp_dir_;
@@ -521,6 +526,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, InitializeMinimumDump) {
     { IOSIntermediateDumpWriter::ScopedMap map(writer(), Key::kSystemInfo); }
     { IOSIntermediateDumpWriter::ScopedMap map(writer(), Key::kProcessInfo); }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -534,6 +540,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, MissingSystemDump) {
     EXPECT_TRUE(writer()->AddProperty(Key::kVersion, &version));
     { IOSIntermediateDumpWriter::ScopedMap map(writer(), Key::kProcessInfo); }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_FALSE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -546,6 +553,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, MissingProcessDump) {
     EXPECT_TRUE(writer()->AddProperty(Key::kVersion, &version));
     { IOSIntermediateDumpWriter::ScopedMap map(writer(), Key::kSystemInfo); }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_FALSE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -571,6 +579,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, EmptySignalDump) {
       writer()->AddProperty(Key::kThreadID, &thread_id);
     }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -597,6 +606,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, EmptyMachDump) {
       writer()->AddProperty(Key::kThreadID, &thread_id);
     }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -623,6 +633,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, EmptyExceptionDump) {
       writer()->AddProperty(Key::kThreadID, &thread_id);
     }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -653,6 +664,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, EmptyUncaughtNSExceptionDump) {
           Key::kThreadUncaughtNSExceptionFrames, frames, num_frames);
     }
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -671,6 +683,8 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, ShortContext) {
         writer(), /*has_module_path=*/false, /*use_long_annotations=*/false);
     WriteMachException(writer(), true /* short_context=true*/);
   }
+  CloseWriter();
+
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -692,6 +706,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, LongAnnotations) {
         writer(), /*has_module_path=*/false, /*use_long_annotations=*/true);
     WriteMachException(writer());
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -713,6 +728,7 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, FullReport) {
         writer(), /*has_module_path=*/true, /*use_long_annotations=*/false);
     WriteMachException(writer());
   }
+  CloseWriter();
   ProcessSnapshotIOSIntermediateDump process_snapshot;
   ASSERT_TRUE(process_snapshot.InitializeWithFilePath(path(), annotations()));
   EXPECT_FALSE(IsRegularFile(path()));
@@ -745,6 +761,11 @@ TEST_F(ProcessSnapshotIOSIntermediateDumpTest, FuzzTestCases) {
       FILE_PATH_LITERAL("snapshot/ios/testdata/crash-6605504629637120"));
   crashpad::internal::ProcessSnapshotIOSIntermediateDump process_snapshot3;
   EXPECT_FALSE(process_snapshot3.InitializeWithFilePath(fuzz_path, {}));
+
+  fuzz_path = TestPaths::TestDataRoot().Append(
+      FILE_PATH_LITERAL("snapshot/ios/testdata/crash-c44acfcbccd8c7a8"));
+  crashpad::internal::ProcessSnapshotIOSIntermediateDump process_snapshot4;
+  EXPECT_TRUE(process_snapshot4.InitializeWithFilePath(fuzz_path, {}));
 }
 
 }  // namespace

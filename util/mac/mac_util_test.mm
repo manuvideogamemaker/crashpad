@@ -1,4 +1,4 @@
-// Copyright 2014 The Crashpad Authors. All rights reserved.
+// Copyright 2014 The Crashpad Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,17 +22,6 @@
 #include "base/mac/scoped_nsobject.h"
 #include "base/strings/stringprintf.h"
 #include "gtest/gtest.h"
-
-#ifdef __GLIBCXX__
-// When C++ exceptions are disabled, libstdc++ from GCC 4.2 defines |try| and
-// |catch| so as to allow exception-expecting C++ code to build properly when
-// language support for exceptions is not present. These macros interfere with
-// the use of |@try| and |@catch| in Objective-C files such as this one.
-// Undefine these macros here, after everything has been #included, since there
-// will be no C++ uses and only Objective-C uses from this point on.
-#undef try
-#undef catch
-#endif
 
 namespace crashpad {
 namespace test {
@@ -76,10 +65,9 @@ TEST(MacUtil, MacOSVersionComponents) {
   int minor;
   int bugfix;
   std::string build;
-  bool server;
   std::string version_string;
-  ASSERT_TRUE(MacOSVersionComponents(
-      &major, &minor, &bugfix, &build, &server, &version_string));
+  ASSERT_TRUE(
+      MacOSVersionComponents(&major, &minor, &bugfix, &build, &version_string));
 
   EXPECT_GE(major, 10);
   EXPECT_LE(major, 99);
@@ -127,10 +115,9 @@ TEST(MacUtil, MacOSVersionNumber) {
   int minor;
   int bugfix;
   std::string build;
-  bool server;
   std::string version_string;
-  ASSERT_TRUE(MacOSVersionComponents(
-      &major, &minor, &bugfix, &build, &server, &version_string));
+  ASSERT_TRUE(
+      MacOSVersionComponents(&major, &minor, &bugfix, &build, &version_string));
 
   EXPECT_EQ(macos_version_number,
             major * 1'00'00 + minor * 1'00 +

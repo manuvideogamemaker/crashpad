@@ -1,4 +1,4 @@
-// Copyright 2015 The Crashpad Authors. All rights reserved.
+// Copyright 2015 The Crashpad Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -163,6 +163,11 @@ const MemorySnapshot* ThreadSnapshotWin::Stack() const {
 uint64_t ThreadSnapshotWin::ThreadID() const {
   INITIALIZATION_STATE_DCHECK_VALID(initialized_);
   return thread_.id;
+}
+
+std::string ThreadSnapshotWin::ThreadName() const {
+  INITIALIZATION_STATE_DCHECK_VALID(initialized_);
+  return thread_.name;
 }
 
 int ThreadSnapshotWin::SuspendCount() const {

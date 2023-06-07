@@ -1,4 +1,4 @@
-// Copyright 2015 The Crashpad Authors. All rights reserved.
+// Copyright 2015 The Crashpad Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@
 #include <windows.h>
 #include <sys/time.h>
 
+#include <string>
 #include <vector>
 
 #include "build/build_config.h"
@@ -77,6 +78,7 @@ class ProcessReaderWin {
     ~Thread() {}
 
     ThreadContext context;
+    std::string name;
     uint64_t id;
     WinVMAddress teb_address;
     WinVMSize teb_size;
